@@ -1,0 +1,321 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  The Cart service is part of the ACME Serverless Shop. The goal of this specific service is to keep track of carts and items in the different carts.
+
+Parameters:
+  Version:
+    Type: String
+  User:
+    Type: String
+  Team:
+    Type: String
+  Feature:
+    Type: String
+    Default: acmeserverless
+  Stage:
+    Type: String
+    Default: dev
+  WavefrontURL:
+    Type: String
+  WavefrontToken:
+    Type: String
+
+Globals:
+  Function:
+    Timeout: 5
+    Environment:
+      Variables:
+        REGION: !Ref AWS::Region
+        WAVEFRONT_ENABLED: true
+        WAVEFRONT_URL: !Ref WavefrontURL
+        WAVEFRONT_API_TOKEN: !Ref WavefrontToken
+        TABLENAME: !Ref CartTable
+
+Resources:
+  CartTable: 
+    Type: AWS::DynamoDB::Table
+    Properties: 
+      AttributeDefinitions: 
+        - AttributeName: "UserID"
+          AttributeType: "S"
+      KeySchema: 
+        - AttributeName: "UserID"
+          KeyType: "HASH"
+      ProvisionedThroughput: 
+        ReadCapacityUnits: "10"
+        WriteCapacityUnits: "10"
+      TableName: "Cart"
+  CartItems:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: cartitems
+      Runtime: go1.x
+      CodeUri: bin/
+      FunctionName: CartItems
+      Description: A Lambda function to get cart items from DynamoDB based on the userID
+      MemorySize: 256
+      Timeout: 10
+      Policies:
+        - AWSLambdaRole
+        - AWSLambdaSQSQueueExecutionRole
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CartTable
+      Environment:
+        Variables:
+          TABLENAME: !Ref CartTable
+      Events:
+        GetCartItemsAPI:
+          Type: Api
+          Properties:
+            Path: /cart/items/{userid}
+            Method: GET
+      Tags:
+        version: !Ref Version
+        author: !Ref User
+        team: !Ref Team
+        feature: !Ref Feature
+        region: !Ref AWS::Region
+      VersionDescription: !Ref Version
+  CartItemsTotal:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: cartitemstotal
+      Runtime: go1.x
+      CodeUri: bin/
+      FunctionName: CartItemsTotal
+      Description: A Lambda function to get the total number of items in a cart from DynamoDB based on the userID
+      MemorySize: 256
+      Timeout: 10
+      Policies:
+        - AWSLambdaRole
+        - AWSLambdaSQSQueueExecutionRole
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CartTable
+      Environment:
+        Variables:
+          TABLENAME: !Ref CartTable
+      Events:
+        CartItemsTotalAPI:
+          Type: Api
+          Properties:
+            Path: /cart/items/total/{userid}
+            Method: GET
+      Tags:
+        version: !Ref Version
+        author: !Ref User
+        team: !Ref Team
+        feature: !Ref Feature
+        region: !Ref AWS::Region
+      VersionDescription: !Ref Version
+  CartTotal:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: carttotal
+      Runtime: go1.x
+      CodeUri: bin/
+      FunctionName: CartTotal
+      Description: A Lambda function to get the total value of items in a cart from DynamoDB based on the userID
+      MemorySize: 256
+      Timeout: 10
+      Policies:
+        - AWSLambdaRole
+        - AWSLambdaSQSQueueExecutionRole
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CartTable
+      Environment:
+        Variables:
+          TABLENAME: !Ref CartTable
+      Events:
+        CartTotalAPI:
+          Type: Api
+          Properties:
+            Path: /cart/total/{userid}
+            Method: GET
+      Tags:
+        version: !Ref Version
+        author: !Ref User
+        team: !Ref Team
+        feature: !Ref Feature
+        region: !Ref AWS::Region
+      VersionDescription: !Ref Version
+  ClearCart:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: clearcart
+      Runtime: go1.x
+      CodeUri: bin/
+      FunctionName: ClearCart
+      Description: A Lambda function to clear the cart of a user
+      MemorySize: 256
+      Timeout: 10
+      Policies:
+        - AWSLambdaRole
+        - AWSLambdaSQSQueueExecutionRole
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CartTable
+      Environment:
+        Variables:
+          TABLENAME: !Ref CartTable
+      Events:
+        ClearCartAPI:
+          Type: Api
+          Properties:
+            Path: /cart/clear/{userid}
+            Method: GET
+      Tags:
+        version: !Ref Version
+        author: !Ref User
+        team: !Ref Team
+        feature: !Ref Feature
+        region: !Ref AWS::Region
+      VersionDescription: !Ref Version
+  AllCarts:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: allcarts
+      Runtime: go1.x
+      CodeUri: bin/
+      FunctionName: AllCarts
+      Description: A Lambda function to get all carts from DynamoDB
+      MemorySize: 256
+      Timeout: 10
+      Policies:
+        - AWSLambdaRole
+        - AWSLambdaSQSQueueExecutionRole
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CartTable
+      Environment:
+        Variables:
+          TABLENAME: !Ref CartTable
+      Events:
+        AllCartsAPI:
+          Type: Api
+          Properties:
+            Path: /cart/all
+            Method: GET
+      Tags:
+        version: !Ref Version
+        author: !Ref User
+        team: !Ref Team
+        feature: !Ref Feature
+        region: !Ref AWS::Region
+      VersionDescription: !Ref Version
+  AddCartItem:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: addcartitem
+      Runtime: go1.x
+      CodeUri: bin/
+      FunctionName: AddCartItem
+      Description: A Lambda function to add an item to a cart
+      MemorySize: 256
+      Timeout: 10
+      Policies:
+        - AWSLambdaRole
+        - AWSLambdaSQSQueueExecutionRole
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CartTable
+      Environment:
+        Variables:
+          TABLENAME: !Ref CartTable
+      Events:
+        AddCartItemAPI:
+          Type: Api
+          Properties:
+            Path: /cart/item/add/{userid}
+            Method: POST
+      Tags:
+        version: !Ref Version
+        author: !Ref User
+        team: !Ref Team
+        feature: !Ref Feature
+        region: !Ref AWS::Region
+      VersionDescription: !Ref Version
+  ModifyCart:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: modifycart
+      Runtime: go1.x
+      CodeUri: bin/
+      FunctionName: ModifyCart
+      Description: A Lambda function to modify a cart
+      MemorySize: 256
+      Timeout: 10
+      Policies:
+        - AWSLambdaRole
+        - AWSLambdaSQSQueueExecutionRole
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CartTable
+      Environment:
+        Variables:
+          TABLENAME: !Ref CartTable
+      Events:
+        ModifyCartAPI:
+          Type: Api
+          Properties:
+            Path: /cart/modify/{userid}
+            Method: POST
+      Tags:
+        version: !Ref Version
+        author: !Ref User
+        team: !Ref Team
+        feature: !Ref Feature
+        region: !Ref AWS::Region
+      VersionDescription: !Ref Version
+  ModifyCartItem:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: modifycartitem
+      Runtime: go1.x
+      CodeUri: bin/
+      FunctionName: ModifyCartItem
+      Description: A Lambda function to modify an item to a cart
+      MemorySize: 256
+      Timeout: 10
+      Policies:
+        - AWSLambdaRole
+        - AWSLambdaSQSQueueExecutionRole
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CartTable
+      Environment:
+        Variables:
+          TABLENAME: !Ref CartTable
+      Events:
+        ModifyCartItemAPI:
+          Type: Api
+          Properties:
+            Path: /cart/item/modify/{userid}
+            Method: POST
+      Tags:
+        version: !Ref Version
+        author: !Ref User
+        team: !Ref Team
+        feature: !Ref Feature
+        region: !Ref AWS::Region
+      VersionDescription: !Ref Version
+Outputs:
+  CartItemsURL:
+    Description: "API Gateway endpoint URL to get all cart items for a user"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/cart/items/{userid}"
+  AddCartItemURL:
+    Description: "API Gateway endpoint URL to add a cart item for a user"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/cart/item/add/{userid}"
+  CartItemsTotalURL:
+    Description: "API Gateway endpoint URL to get the total number of items for a cart"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/cart/items/total/{userid}"
+  CartTotalURL:
+    Description: "API Gateway endpoint URL to get the total value of items for a cart"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/cart/total/{userid}"
+  ClearCartURL:
+    Description: "API Gateway endpoint URL to clear a cart"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/cart/clear/{userid}"
+  AllCartsURL:
+    Description: "API Gateway endpoint URL to get all carts"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/cart/all"
+  ModifyCartURL:
+    Description: "API Gateway endpoint URL to get modify a cart"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/cart/modify/{userid}"
+  ModifyCartItemURL:
+    Description: "API Gateway endpoint URL to modify a cart item for a user"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/cart/item/modify/{userid}"
