@@ -13,7 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/retgits/cart"
-	wflambda "github.com/wavefronthq/wavefront-lambda-go"
+	wflambda "github.com/retgits/wavefront-lambda-go"
 )
 
 var wfAgent = wflambda.NewWavefrontAgent(&wflambda.WavefrontConfig{})
