@@ -1,0 +1,67 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+## A text string that describes the template.
+Description: >
+  The Cart service is part of the ACME Serverless Shop. The goal of this specific service is to keep track of carts and items in the different carts.
+
+## Values to pass to your template at runtime (when you create or update a stack).
+Parameters:
+  Version:
+    Type: String
+  Author:
+    Type: String
+  Team:
+    Type: String
+  Feature:
+    Type: String
+    Default: acmeserverless
+  Stage:
+    Type: String
+    Default: dev
+
+## Specifies the stack resources and their properties.
+Resources:
+  ModifyCartItem:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: lambda-cart-itemmodify
+      Runtime: go1.x
+      CodeUri: bin/
+      FunctionName: ModifyCartItem
+      Description: A Lambda function to modify an item to a cart
+      MemorySize: 256
+      Timeout: 10
+      Tracing: Active
+      Policies:
+        - AWSLambdaRole
+        - DynamoDBCrudPolicy:
+            TableName: "Cart"
+      Environment:
+        Variables:
+          TABLE: "Cart"
+      Events:
+        ModifyCartItemAPI:
+          Type: Api
+          Properties:
+            Path: /cart/item/modify/{userid}
+            Method: POST
+      Tags:
+        version: !Ref Version
+        author: !Ref Author
+        team: !Ref Team
+        feature: !Ref Feature
+        region: !Ref AWS::Region
+      VersionDescription: !Ref Version
+  ModifyCartItemLogGroup:
+    Type: "AWS::Logs::LogGroup"
+    DependsOn: "ModifyCartItem"
+    Properties: 
+      RetentionInDays: 1
+      LogGroupName: !Join ["", ["/aws/lambda/", !Ref ModifyCartItem]]
+
+## Describes the values that are returned whenever you view your stack's properties.
+Outputs:
+  ModifyCartItemURL:
+    Description: "API Gateway endpoint URL to modify an item in a cart"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/cart/item/modify/{userid}"

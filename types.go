@@ -23,6 +23,18 @@ type Cart struct {
 	Userid string `json:"userid"`
 }
 
+type Items []Item
+
+func (r *Items) Marshal() ([]byte, error) {
+	return json.Marshal(r)
+}
+
+func UnmarshalItems(data string) (Items, error) {
+	var r Items
+	err := json.Unmarshal([]byte(data), &r)
+	return r, err
+}
+
 type Item struct {
 	Description string  `json:"description"`
 	Itemid      string  `json:"itemid"`
