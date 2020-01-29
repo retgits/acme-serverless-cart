@@ -29,7 +29,7 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 
 	item, err := cart.UnmarshalItem([]byte(request.Body))
 	if err != nil {
-		return handleError("unmarshaling item data", err)
+		return handleError("unmarshaling item", err)
 	}
 
 	dynamoStore := dynamodb.New()

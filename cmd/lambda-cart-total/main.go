@@ -31,7 +31,7 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 
 	value, err := dynamoStore.ValueInCart(userID)
 	if err != nil {
-		return handleError("getting value", err)
+		return handleError("getting cart value", err)
 	}
 
 	ct := cart.CartValue{

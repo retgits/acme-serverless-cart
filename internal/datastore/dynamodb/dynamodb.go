@@ -41,6 +41,10 @@ func (m manager) GetItems(userID string) (cart.Items, error) {
 		return nil, err
 	}
 
+	if so.Items[0]["CartContent"].S == nil {
+		return nil, fmt.Errorf("no items found for user")
+	}
+
 	str := *so.Items[0]["CartContent"].S
 	return cart.UnmarshalItems(str)
 }
@@ -104,16 +108,26 @@ func (m manager) AllCarts() (cart.Carts, error) {
 		return nil, fmt.Errorf("no item data found")
 	}
 
-	carts := make(cart.Carts, len(so.Items))
+	carts := make(cart.Carts, 0)
 
-	for idx, ct := range so.Items {
+	for _, ct := range so.Items {
+
+		if ct["CartContent"].S == nil {
+			break
+		}
+
 		str := *ct["CartContent"].S
-		cartContent, err := cart.UnmarshalCart(str)
+
+		cartContent, err := cart.UnmarshalItems(str)
 		if err != nil {
 			log.Println(fmt.Sprintf("error unmarshalling cart data: %s", err.Error()))
 			break
 		}
-		carts[idx] = cartContent
+
+		carts = append(carts, cart.Cart{
+			Items:  cartContent,
+			Userid: *ct["UserID"].S,
+		})
 	}
 
 	return carts, nil

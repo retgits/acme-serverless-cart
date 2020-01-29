@@ -8,6 +8,7 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	cart "github.com/retgits/acme-serverless-cart"
 	"github.com/retgits/acme-serverless-cart/internal/datastore/dynamodb"
 )
 
@@ -33,7 +34,12 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 		return handleError("getting value", err)
 	}
 
-	payload, err := items.Marshal()
+	ct := cart.Cart{
+		Items:  items,
+		Userid: userID,
+	}
+
+	payload, err := ct.Marshal()
 	if err != nil {
 		return handleError("marshalling response", err)
 	}
