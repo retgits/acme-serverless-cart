@@ -2,7 +2,7 @@
 
 > A cart service, because what is a shop without a cart to put stuff in?
 
-The Cart service is part of the [ACME Fitness Serverless Shop](https://github.com/vmwarecloudadvocacy/acme_fitness_demo). The goal of this specific service is to keep track of carts and items in the different carts.
+The Cart service is part of the [ACME Fitness Serverless Shop](https://github.com/retgits/acme-serverless). The goal of this specific service is to keep track of carts and items in the different carts.
 
 ## Prerequisites
 
@@ -12,13 +12,13 @@ The Cart service is part of the [ACME Fitness Serverless Shop](https://github.co
 
 ## Eventing Options
 
-The cart service has Lambdas triggered by [Amazon API Gateway](https://aws.amazon.com/api-gateway/)
+The Lambda functions of the cart service are triggered by [Amazon API Gateway](https://aws.amazon.com/api-gateway/).
 
 ## Data Stores
 
 The cart service supports the following data stores:
 
-* [Amazon DynamoDB](https://aws.amazon.com/dynamodb/). The table can be created using the makefile in [create-dynamodb](./cmd/create-dynamodb).
+* [Amazon DynamoDB](https://aws.amazon.com/dynamodb/): With [Makefile.dynamodb](./deploy/cloudformation), you can run run `make -f Makefile.dynamodb deploy` to create the DynamoDB table.
 
 ## Using Amazon API Gateway
 
@@ -41,10 +41,10 @@ Get the Go Module dependencies
 go get ./...
 ```
 
-Switch directories to any of the Lambda folders
+Change directories to the [deploy/cloudformation](./deploy/cloudformation) folder
 
 ```bash
-cd ./cmd/lambda-cart-<name>
+cd ./deploy/cloudformation
 ```
 
 Use make to deploy
@@ -274,6 +274,35 @@ curl --request GET \
   ]
 }
 ```
+
+## Using Make
+
+The Makefiles in the [Cloudformation](./deploy/cloudformation) directory have a few a bunch of options available:
+
+| Target  | Description                                                |
+|---------|------------------------------------------------------------|
+| build   | Build the executable for Lambda                            |
+| clean   | Remove all generated files                                 |
+| deploy  | Deploy the app to AWS                                      |
+| destroy | Deletes the CloudFormation stack and all created resources |
+| help    | Displays the help for each target (this message)           |
+| vuln    | Scans the Go.mod file for known vulnerabilities using Snyk |
+
+## Using Mage
+
+If you want to "go all Go" (_pun intended_) and write plain-old go functions to build and deploy, you can use [Mage](https://magefile.org/). Mage is a make/rake-like build tool using Go so Mage automatically uses the functions you create as Makefile-like runnable targets.
+
+### Prerequisites for Mage
+
+To use Mage, you'll need to install it first:
+
+```bash
+go get -u -d github.com/magefile/mage
+cd $GOPATH/src/github.com/magefile/mage
+go run bootstrap.go
+```
+
+Instructions curtesy of Mage
 
 ## Contributing
 
