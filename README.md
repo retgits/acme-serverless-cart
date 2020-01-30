@@ -22,7 +22,7 @@ The cart service supports the following data stores:
 
 ### Seeding Amazon DynamoDB
 
-To start your journey off with random data in the Order table, you can use [`seed-dynamodb`](./cmd/seed-dynamodb). Running that program will add the default generated data (in [data.json](./cmd/seed-dynamodb/data.json)) into Amazon DynamoDB. To generate your own data, you can use [Mockaroo](https://www.mockaroo.com/) and import the [schema.json](./cmd/seed-dynamodb/schema.json) to start off.
+To start your journey off with random data in the Cart table, you can use [`seed-dynamodb`](./cmd/seed-dynamodb). Running that program will add the default generated data (in [data.json](./cmd/seed-dynamodb/data.json)) into Amazon DynamoDB. To generate your own data, you can use [Mockaroo](https://www.mockaroo.com/) and import the [schema.json](./cmd/seed-dynamodb/schema.json) to start off.
 
 ## Using Amazon API Gateway
 
