@@ -66,3 +66,11 @@ type CartValue struct {
 	CartTotal float64 `json:"carttotal"`
 	UserID    string  `json:"userid"`
 }
+
+type UserIDResponse struct {
+	UserID string `json:"userid"`
+}
+
+func (r *UserIDResponse) Marshal() ([]byte, error) {
+	return json.Marshal(r)
+}

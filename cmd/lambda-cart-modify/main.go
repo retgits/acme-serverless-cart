@@ -29,18 +29,27 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 
 	dynamoStore := dynamodb.New()
 
-	cart, err := cart.UnmarshalCart(request.Body)
+	crt, err := cart.UnmarshalCart(request.Body)
 	if err != nil {
 		return handleError("unmarshalling items", err)
 	}
 
-	err = dynamoStore.StoreItems(userID, cart.Items)
+	err = dynamoStore.StoreItems(userID, crt.Items)
 	if err != nil {
 		return handleError("storing items", err)
 	}
 
+	res := cart.UserIDResponse{
+		UserID: userID,
+	}
+
+	payload, err := res.Marshal()
+	if err != nil {
+		return handleError("marshalling response", err)
+	}
+
 	response.StatusCode = http.StatusOK
-	response.Body = userID
+	response.Body = string(payload)
 
 	return response, nil
 }

@@ -33,7 +33,7 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	}
 
 	response.StatusCode = http.StatusOK
-	response.Body = userID
+	//response.Body = userID
 
 	return response, nil
 }

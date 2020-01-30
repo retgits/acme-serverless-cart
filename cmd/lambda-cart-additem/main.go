@@ -39,8 +39,17 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 		return handleError("adding item", err)
 	}
 
+	res := cart.UserIDResponse{
+		UserID: userID,
+	}
+
+	payload, err := res.Marshal()
+	if err != nil {
+		return handleError("marshalling response", err)
+	}
+
 	response.StatusCode = http.StatusOK
-	response.Body = userID
+	response.Body = string(payload)
 
 	return response, nil
 }

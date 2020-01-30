@@ -254,29 +254,27 @@ curl --request GET \
 ```
 
 ```json
-{
-  "all carts": [
+[
     {
-      "cart": [
-        {
-          "description": "fitband for any age - even babies",
-          "itemid": "sdfsdfsfs",
-          "name": "fitband",
-          "price": 4.5,
-          "quantity": 1
-        },
-        {
-          "description": "the most awesome redpants in the world",
-          "itemid": "sfsdsda3343",
-          "name": "redpant",
-          "price": 400,
-          "quantity": 1
-        }
-      ],
-      "id": "shri"
+        "cart": [
+            {
+                "description": "fitband for any age - even babies",
+                "itemid": "sdfsdfsfs",
+                "name": "fitband",
+                "price": 4.5,
+                "quantity": 1
+            },
+            {
+                "description": "the most awesome redpants in the world",
+                "itemid": "sfsdsda3343",
+                "name": "redpant",
+                "price": 400,
+                "quantity": 1
+            }
+        ],
+        "id": "shri"
     }
-  ]
-}
+]
 ```
 
 ## Using Make
@@ -284,7 +282,7 @@ curl --request GET \
 The Makefiles in the [Cloudformation](./deploy/cloudformation) directory have a few a bunch of options available:
 
 | Target  | Description                                                |
-|---------|------------------------------------------------------------|
+| ------- | ---------------------------------------------------------- |
 | build   | Build the executable for Lambda                            |
 | clean   | Remove all generated files                                 |
 | deploy  | Deploy the app to AWS                                      |
@@ -313,7 +311,7 @@ Instructions curtesy of Mage
 The Magefile in this repository has a bunch of targets available:
 
 | Target | Description                                                                                              |
-|--------|----------------------------------------------------------------------------------------------------------|
+| ------ | -------------------------------------------------------------------------------------------------------- |
 | build  | compiles the individual commands in the cmd folder, along with their dependencies.                       |
 | clean  | removes object files from package source directories.                                                    |
 | deploy | packages, deploys, and returns all outputs of your stack.                                                |
