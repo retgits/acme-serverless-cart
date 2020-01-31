@@ -32,8 +32,11 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 		return handleError("clearing cart", err)
 	}
 
+	headers := request.Headers
+	headers["Access-Control-Allow-Origin"] = "*"
+
 	response.StatusCode = http.StatusOK
-	//response.Body = userID
+	response.Headers = headers
 
 	return response, nil
 }
