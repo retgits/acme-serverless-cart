@@ -12,17 +12,22 @@ import (
 	"github.com/retgits/acme-serverless-cart/internal/datastore/dynamodb"
 )
 
-func handleError(area string, err error) (events.APIGatewayProxyResponse, error) {
+func handleError(area string, headers map[string]string, err error) (events.APIGatewayProxyResponse, error) {
 	msg := fmt.Sprintf("error %s: %s", area, err.Error())
 	log.Println(msg)
 	return events.APIGatewayProxyResponse{
 		StatusCode: http.StatusInternalServerError,
 		Body:       msg,
+		Headers:    headers,
 	}, err
 }
 
 func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	response := events.APIGatewayProxyResponse{}
+	headers := request.Headers
+	if headers == nil {
+		headers = make(map[string]string)
+	}
+	headers["Access-Control-Allow-Origin"] = "*"
 
 	// Create the key attributes
 	userID := request.PathParameters["userid"]
@@ -31,7 +36,7 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 
 	items, err := dynamoStore.ItemsInCart(userID)
 	if err != nil {
-		return handleError("calculating items", err)
+		return handleError("calculating items", headers, err)
 	}
 
 	ct := cart.CartTotal{
@@ -39,17 +44,16 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 		UserID:        userID,
 	}
 
-	pl, err := ct.Marshal()
+	payload, err := ct.Marshal()
 	if err != nil {
-		return handleError("marshalling response", err)
+		return handleError("marshalling response", headers, err)
 	}
 
-	headers := request.Headers
-	headers["Access-Control-Allow-Origin"] = "*"
-
-	response.StatusCode = http.StatusOK
-	response.Body = string(pl)
-	response.Headers = headers
+	response := events.APIGatewayProxyResponse{
+		StatusCode: http.StatusOK,
+		Body:       string(payload),
+		Headers:    headers,
+	}
 
 	return response, nil
 }

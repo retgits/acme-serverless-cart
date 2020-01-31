@@ -111,17 +111,12 @@ func (m manager) AllCarts() (cart.Carts, error) {
 	carts := make(cart.Carts, 0)
 
 	for _, ct := range so.Items {
-
-		if ct["CartContent"].S == nil {
-			break
-		}
-
 		str := *ct["CartContent"].S
 
 		cartContent, err := cart.UnmarshalItems(str)
 		if err != nil {
 			log.Println(fmt.Sprintf("error unmarshalling cart data: %s", err.Error()))
-			break
+			continue
 		}
 
 		carts = append(carts, cart.Cart{
@@ -147,7 +142,7 @@ func (m manager) ClearCart(userID string) error {
 
 	em := make(map[string]*dynamodb.AttributeValue)
 	em[":cartcontent"] = &dynamodb.AttributeValue{
-		NULL: aws.Bool(true),
+		S: aws.String(" "),
 	}
 
 	uii := &dynamodb.UpdateItemInput{
