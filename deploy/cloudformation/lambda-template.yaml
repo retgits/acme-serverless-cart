@@ -33,7 +33,7 @@ Resources:
       Handler: lambda-cart-additem
       Runtime: go1.x
       CodeUri: bin/
-      FunctionName: AddCartItem
+      FunctionName: !Sub "AddCartItem-${Stage}"
       Description: A Lambda function to add an item to a cart
       MemorySize: 256
       Timeout: 10
@@ -70,7 +70,7 @@ Resources:
       Handler: lambda-cart-all 
       Runtime: go1.x
       CodeUri: bin/
-      FunctionName: AllCarts
+      FunctionName: !Sub "AllCarts-${Stage}"
       Description: A Lambda function to get all carts from DynamoDB
       MemorySize: 256
       Timeout: 10
@@ -107,7 +107,7 @@ Resources:
       Handler: lambda-cart-clear
       Runtime: go1.x
       CodeUri: bin/
-      FunctionName: ClearCart 
+      FunctionName: !Sub "ClearCart-${Stage}" 
       Description: A Lambda function to clear the cart of a user
       MemorySize: 256
       Timeout: 10
@@ -144,7 +144,7 @@ Resources:
       Handler: lambda-cart-itemmodify
       Runtime: go1.x
       CodeUri: bin/
-      FunctionName: ModifyCartItem
+      FunctionName: !Sub "ModifyCartItem-${Stage}"
       Description: A Lambda function to modify an item to a cart
       MemorySize: 256
       Timeout: 10
@@ -181,7 +181,7 @@ Resources:
       Handler: lambda-cart-itemtotal
       Runtime: go1.x
       CodeUri: bin/
-      FunctionName: CartItemsTotal
+      FunctionName: !Sub "CartItemsTotal-${Stage}"
       Description: A Lambda function to get the total number of items in a cart from DynamoDB based on the userID
       MemorySize: 256
       Timeout: 10
@@ -218,7 +218,7 @@ Resources:
       Handler: lambda-cart-modify
       Runtime: go1.x
       CodeUri: bin/
-      FunctionName: ModifyCart
+      FunctionName: !Sub "ModifyCart-${Stage}"
       Description: A Lambda function to modify a cart
       MemorySize: 256
       Timeout: 10
@@ -255,7 +255,7 @@ Resources:
       Handler: lambda-cart-total
       Runtime: go1.x
       CodeUri: bin/
-      FunctionName: CartTotal
+      FunctionName: !Sub "CartTotal-${Stage}"
       Description: A Lambda function to get the total value of items in a cart from DynamoDB based on the userID
       MemorySize: 256
       Timeout: 10
@@ -292,7 +292,7 @@ Resources:
       Handler: lambda-cart-user
       Runtime: go1.x
       CodeUri: bin/
-      FunctionName: UserCartItems
+      FunctionName: !Sub "UserCartItems-${Stage}"
       Description: A Lambda function to get cart items from DynamoDB based on the userID
       MemorySize: 256
       Timeout: 10
