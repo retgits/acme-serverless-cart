@@ -20,7 +20,14 @@ Parameters:
     Type: String
     Default: dev
 
+## Specifies properties that are common to all your serverless functions, APIs, and simple tables.
 Globals:
+  Function:
+    Environment:
+      Variables:
+        TABLE: !Sub "${Feature}-${Stage}"
+        REGION: !Ref AWS::Region
+        # DYNAMO_URL: http://host.docker.internal:8000 ## Uncomment this property to be able to test locally using DynamoDB local 
   Api:
     Cors:
       AllowOrigin: "'*'"
@@ -41,10 +48,7 @@ Resources:
       Policies:
         - AWSLambdaRole
         - DynamoDBCrudPolicy:
-            TableName: "Cart"
-      Environment:
-        Variables:
-          TABLE: "Cart"
+            TableName: !Sub "${Feature}-${Stage}"
       Events:
         AddCartItemAPI:
           Type: Api
@@ -78,10 +82,7 @@ Resources:
       Policies:
         - AWSLambdaRole
         - DynamoDBCrudPolicy:
-            TableName: "Cart"
-      Environment:
-        Variables:
-          TABLE: "Cart"
+            TableName: !Sub "${Feature}-${Stage}"
       Events:
         AllCartsAPI:
           Type: Api
@@ -115,10 +116,7 @@ Resources:
       Policies:
         - AWSLambdaRole
         - DynamoDBCrudPolicy:
-            TableName: "Cart"
-      Environment:
-        Variables:
-          TABLE: "Cart"
+            TableName: !Sub "${Feature}-${Stage}"
       Events:
         ClearCartAPI:
           Type: Api
@@ -152,10 +150,7 @@ Resources:
       Policies:
         - AWSLambdaRole
         - DynamoDBCrudPolicy:
-            TableName: "Cart"
-      Environment:
-        Variables:
-          TABLE: "Cart"
+            TableName: !Sub "${Feature}-${Stage}"
       Events:
         ModifyCartItemAPI:
           Type: Api
@@ -189,10 +184,7 @@ Resources:
       Policies:
         - AWSLambdaRole
         - DynamoDBCrudPolicy:
-            TableName: "Cart"
-      Environment:
-        Variables:
-          TABLE: "Cart"
+            TableName: !Sub "${Feature}-${Stage}"
       Events:
         CartItemsTotalAPI:
           Type: Api
@@ -226,10 +218,7 @@ Resources:
       Policies:
         - AWSLambdaRole
         - DynamoDBCrudPolicy:
-            TableName: "Cart"
-      Environment:
-        Variables:
-          TABLE: "Cart"
+            TableName: !Sub "${Feature}-${Stage}"
       Events:
         ModifyCartAPI:
           Type: Api
@@ -263,10 +252,7 @@ Resources:
       Policies:
         - AWSLambdaRole
         - DynamoDBCrudPolicy:
-            TableName: "Cart"
-      Environment:
-        Variables:
-          TABLE: "Cart"
+            TableName: !Sub "${Feature}-${Stage}"
       Events:
         CartTotalAPI:
           Type: Api
@@ -300,10 +286,7 @@ Resources:
       Policies:
         - AWSLambdaRole
         - DynamoDBCrudPolicy:
-            TableName: "Cart"
-      Environment:
-        Variables:
-          TABLE: "Cart"
+            TableName: !Sub "${Feature}-${Stage}"
       Events:
         UserCartItemsAPI:
           Type: Api
