@@ -19,6 +19,9 @@ Parameters:
   Stage:
     Type: String
     Default: dev
+  SentryDSN:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /Sentry/Dsn
 
 ## Specifies properties that are common to all your serverless functions, APIs, and simple tables.
 Globals:
@@ -27,7 +30,10 @@ Globals:
       Variables:
         TABLE: !Sub "${Feature}-${Stage}"
         REGION: !Ref AWS::Region
-        # DYNAMO_URL: http://host.docker.internal:8000 ## Uncomment this property to be able to test locally using DynamoDB local 
+        # DYNAMO_URL: http://host.docker.internal:8000 ## Uncomment this property to be able to test locally using DynamoDB local
+        VERSION: !Ref Version
+        STAGE: !Ref Stage
+        SENTRY_DSN: !Ref SentryDSN
   Api:
     Cors:
       AllowOrigin: "'*'"
@@ -49,6 +55,9 @@ Resources:
         - AWSLambdaRole
         - DynamoDBCrudPolicy:
             TableName: !Sub "${Feature}-${Stage}"
+      Environment:
+        Variables:
+          FUNCTION_NAME: AddCartItem
       Events:
         AddCartItemAPI:
           Type: Api
@@ -83,6 +92,9 @@ Resources:
         - AWSLambdaRole
         - DynamoDBCrudPolicy:
             TableName: !Sub "${Feature}-${Stage}"
+      Environment:
+        Variables:
+          FUNCTION_NAME: AllCarts
       Events:
         AllCartsAPI:
           Type: Api
@@ -117,6 +129,9 @@ Resources:
         - AWSLambdaRole
         - DynamoDBCrudPolicy:
             TableName: !Sub "${Feature}-${Stage}"
+      Environment:
+        Variables:
+          FUNCTION_NAME: ClearCart
       Events:
         ClearCartAPI:
           Type: Api
@@ -151,6 +166,9 @@ Resources:
         - AWSLambdaRole
         - DynamoDBCrudPolicy:
             TableName: !Sub "${Feature}-${Stage}"
+      Environment:
+        Variables:
+          FUNCTION_NAME: ModifyCartItem
       Events:
         ModifyCartItemAPI:
           Type: Api
@@ -185,6 +203,9 @@ Resources:
         - AWSLambdaRole
         - DynamoDBCrudPolicy:
             TableName: !Sub "${Feature}-${Stage}"
+      Environment:
+        Variables:
+          FUNCTION_NAME: CartItemsTotal
       Events:
         CartItemsTotalAPI:
           Type: Api
@@ -219,6 +240,9 @@ Resources:
         - AWSLambdaRole
         - DynamoDBCrudPolicy:
             TableName: !Sub "${Feature}-${Stage}"
+      Environment:
+        Variables:
+          FUNCTION_NAME: ModifyCart
       Events:
         ModifyCartAPI:
           Type: Api
@@ -253,6 +277,9 @@ Resources:
         - AWSLambdaRole
         - DynamoDBCrudPolicy:
             TableName: !Sub "${Feature}-${Stage}"
+      Environment:
+        Variables:
+          FUNCTION_NAME: CartTotal
       Events:
         CartTotalAPI:
           Type: Api
@@ -287,6 +314,9 @@ Resources:
         - AWSLambdaRole
         - DynamoDBCrudPolicy:
             TableName: !Sub "${Feature}-${Stage}"
+      Environment:
+        Variables:
+          FUNCTION_NAME: UserCartItems
       Events:
         UserCartItemsAPI:
           Type: Api

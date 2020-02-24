@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/user"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -61,15 +60,15 @@ func (m manager) GetItems(userID string) (cart.Items, error) {
 	// Execute the DynamoDB query
 	qo, err := dbs.Query(qi)
 	if err != nil {
-		return user.User{}, err
+		return cart.Items{}, err
 	}
 
 	// Return an error if no data was found
-	if so.Items[0]["Payload"].S == nil {
+	if qo.Items[0]["Payload"].S == nil {
 		return nil, fmt.Errorf("no items found with for user with id %s", userID)
 	}
 
-	str := *so.Items[0]["Payload"].S
+	str := *qo.Items[0]["Payload"].S
 	return cart.UnmarshalItems(str)
 }
 
@@ -138,7 +137,7 @@ func (m manager) AllCarts() (cart.Carts, error) {
 
 	carts := make(cart.Carts, 0)
 
-	for _, ct := range so.Items {
+	for _, ct := range qo.Items {
 		str := *ct["Payload"].S
 
 		cartContent, err := cart.UnmarshalItems(str)
