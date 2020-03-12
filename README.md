@@ -37,7 +37,7 @@ config:
     version: 0.1.0 ## The version
 ```
 
-To create the Pulumi stack, and create the Payment service, run `pulumi up`.
+To create the Pulumi stack, and create the Cart service, run `pulumi up`.
 
 If you want to keep track of the resources in Pulumi, you can add tags to your stack as well.
 
