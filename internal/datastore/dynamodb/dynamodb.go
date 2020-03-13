@@ -1,3 +1,5 @@
+// Package dynamodb leverages Amazon DynamoDB, a key-value and document database that delivers single-digit millisecond
+// performance at any scale to store data.
 package dynamodb
 
 import (
@@ -12,10 +14,13 @@ import (
 	"github.com/retgits/acme-serverless-cart/internal/datastore"
 )
 
-// Create a single instance of the dynamoDB service
-// which can be reused if the container stays warm
+// The pointer to DynamoDB provides the API operation methods for making requests to Amazon DynamoDB.
+// This specifically creates a single instance of the dynamoDB service which can be reused if the
+// container stays warm.
 var dbs *dynamodb.DynamoDB
 
+// manager is an empty struct that implements the methods of the
+// Manager interface.
 type manager struct{}
 
 // init creates the connection to dynamoDB. If the environment variable
@@ -148,7 +153,7 @@ func (m manager) AllCarts() (cart.Carts, error) {
 
 		carts = append(carts, cart.Cart{
 			Items:  cartContent,
-			Userid: *ct["SK"].S,
+			UserID: *ct["SK"].S,
 		})
 	}
 
