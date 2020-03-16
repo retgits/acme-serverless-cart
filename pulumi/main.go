@@ -279,11 +279,11 @@ func main() {
 			roles[function] = role
 		}
 
-		// All functions will have the same environment variables
+		// All functions will have the same environment variables, with the exception
+		// of the function name
 		variables := make(map[string]pulumi.StringInput)
 		variables["REGION"] = pulumi.String(lambdaConfig.Region)
 		variables["SENTRY_DSN"] = pulumi.String(lambdaConfig.SentryDSN)
-		variables["FUNCTION_NAME"] = pulumi.String(fmt.Sprintf("%s-lambda-payment", ctx.Stack()))
 		variables["VERSION"] = tags.Version
 		variables["STAGE"] = pulumi.String(ctx.Stack())
 		parts := strings.Split(lambdaConfig.DynamoARN, "/")
@@ -306,6 +306,7 @@ func main() {
 			Role:        roles["lambda-cart-additem"].Arn,
 			Tags:        pulumi.Map(tagMap),
 		}
+		variables["FUNCTION_NAME"] = pulumi.String(fmt.Sprintf("%s-lambda-cart-additem", ctx.Stack()))
 
 		function, err := lambda.NewFunction(ctx, fmt.Sprintf("%s-lambda-cart-additem", ctx.Stack()), functionArgs)
 		if err != nil {
@@ -368,6 +369,7 @@ func main() {
 			Role:        roles["lambda-cart-all"].Arn,
 			Tags:        pulumi.Map(tagMap),
 		}
+		variables["FUNCTION_NAME"] = pulumi.String(fmt.Sprintf("%s-lambda-cart-all", ctx.Stack()))
 
 		function, err = lambda.NewFunction(ctx, fmt.Sprintf("%s-lambda-cart-all", ctx.Stack()), functionArgs)
 		if err != nil {
@@ -430,6 +432,7 @@ func main() {
 			Role:        roles["lambda-cart-clear"].Arn,
 			Tags:        pulumi.Map(tagMap),
 		}
+		variables["FUNCTION_NAME"] = pulumi.String(fmt.Sprintf("%s-lambda-cart-clear", ctx.Stack()))
 
 		function, err = lambda.NewFunction(ctx, fmt.Sprintf("%s-lambda-cart-clear", ctx.Stack()), functionArgs)
 		if err != nil {
@@ -492,6 +495,7 @@ func main() {
 			Role:        roles["lambda-cart-itemmodify"].Arn,
 			Tags:        pulumi.Map(tagMap),
 		}
+		variables["FUNCTION_NAME"] = pulumi.String(fmt.Sprintf("%s-lambda-cart-itemmodify", ctx.Stack()))
 
 		function, err = lambda.NewFunction(ctx, fmt.Sprintf("%s-lambda-cart-itemmodify", ctx.Stack()), functionArgs)
 		if err != nil {
@@ -554,6 +558,7 @@ func main() {
 			Role:        roles["lambda-cart-itemtotal"].Arn,
 			Tags:        pulumi.Map(tagMap),
 		}
+		variables["FUNCTION_NAME"] = pulumi.String(fmt.Sprintf("%s-lambda-cart-itemtotal", ctx.Stack()))
 
 		function, err = lambda.NewFunction(ctx, fmt.Sprintf("%s-lambda-cart-itemtotal", ctx.Stack()), functionArgs)
 		if err != nil {
@@ -616,6 +621,7 @@ func main() {
 			Role:        roles["lambda-cart-modify"].Arn,
 			Tags:        pulumi.Map(tagMap),
 		}
+		variables["FUNCTION_NAME"] = pulumi.String(fmt.Sprintf("%s-lambda-cart-modify", ctx.Stack()))
 
 		function, err = lambda.NewFunction(ctx, fmt.Sprintf("%s-lambda-cart-modify", ctx.Stack()), functionArgs)
 		if err != nil {
@@ -678,6 +684,7 @@ func main() {
 			Role:        roles["lambda-cart-total"].Arn,
 			Tags:        pulumi.Map(tagMap),
 		}
+		variables["FUNCTION_NAME"] = pulumi.String(fmt.Sprintf("%s-lambda-cart-total", ctx.Stack()))
 
 		function, err = lambda.NewFunction(ctx, fmt.Sprintf("%s-lambda-cart-total", ctx.Stack()), functionArgs)
 		if err != nil {
@@ -740,6 +747,7 @@ func main() {
 			Role:        roles["lambda-cart-user"].Arn,
 			Tags:        pulumi.Map(tagMap),
 		}
+		variables["FUNCTION_NAME"] = pulumi.String(fmt.Sprintf("%s-lambda-cart-user", ctx.Stack()))
 
 		function, err = lambda.NewFunction(ctx, fmt.Sprintf("%s-lambda-cart-user", ctx.Stack()), functionArgs)
 		if err != nil {
