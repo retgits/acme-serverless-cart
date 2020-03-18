@@ -8,4 +8,5 @@ require (
 	github.com/getsentry/sentry-go v0.5.1
 	github.com/pulumi/pulumi v1.12.0
 	github.com/pulumi/pulumi-aws v1.25.0
+	github.com/retgits/pulumi-helpers v0.1.4
 )
