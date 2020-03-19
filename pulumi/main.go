@@ -591,7 +591,7 @@ func main() {
 			if err != nil {
 				fmt.Println(err)
 			}
-			return fmt.Sprintf("https://%s.execute-api.%s.amazonaws.com/prod/{message}", id, genericConfig.Region)
+			return fmt.Sprintf("https://%s.execute-api.%s.amazonaws.com/prod/", id, genericConfig.Region)
 		})
 
 		ctx.Export("Gateway::URL", gatewayURL)
