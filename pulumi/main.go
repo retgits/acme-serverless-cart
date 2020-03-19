@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/pulumi/pulumi/sdk/go/pulumi"
 	"github.com/pulumi/pulumi/sdk/go/pulumi/config"
 	"github.com/retgits/pulumi-helpers/builder"
+	gw "github.com/retgits/pulumi-helpers/gateway"
 	"github.com/retgits/pulumi-helpers/sampolicies"
 )
 
@@ -91,8 +93,8 @@ func main() {
 			return err
 		}
 
+		// Build the functions
 		for _, fnName := range functions {
-			// Find the working folder
 			fnFolder := path.Join(wd, "..", "cmd", fnName)
 			buildFactory := builder.NewFactory().WithFolder(fnFolder)
 			buildFactory.MustBuild()
@@ -101,107 +103,6 @@ func main() {
 
 		// Create a factory to get policies from
 		iamFactory := sampolicies.NewFactory().WithAccountID(genericConfig.AccountID).WithPartition("aws").WithRegion(genericConfig.Region)
-
-		// Create the API Gateway Policy
-		iamFactory.AddAssumeRoleLambda()
-		iamFactory.AddExecuteAPI()
-		policies, err := iamFactory.GetPolicyStatement()
-		if err != nil {
-			return err
-		}
-
-		// Create an API Gateway
-		gateway, err := apigateway.NewRestApi(ctx, "CartService", &apigateway.RestApiArgs{
-			Name:        pulumi.String("CartService"),
-			Description: pulumi.String("ACME Serverless Fitness Shop - Cart"),
-			Tags:        pulumi.Map(tagMap),
-			Policy:      pulumi.String(policies),
-		})
-		if err != nil {
-			return err
-		}
-
-		// Create the parent resources in the API Gateway
-		cartResource, err := apigateway.NewResource(ctx, "CartAPIResource", &apigateway.ResourceArgs{
-			RestApi:  gateway.ID(),
-			PathPart: pulumi.String("cart"),
-			ParentId: gateway.RootResourceId,
-		})
-		if err != nil {
-			return err
-		}
-
-		itemResource, err := apigateway.NewResource(ctx, "ItemAPIResource", &apigateway.ResourceArgs{
-			RestApi:  gateway.ID(),
-			PathPart: pulumi.String("item"),
-			ParentId: cartResource.ID(),
-		})
-		if err != nil {
-			return err
-		}
-
-		clearResource, err := apigateway.NewResource(ctx, "ClearAPIResource", &apigateway.ResourceArgs{
-			RestApi:  gateway.ID(),
-			PathPart: pulumi.String("clear"),
-			ParentId: cartResource.ID(),
-		})
-		if err != nil {
-			return err
-		}
-
-		cartModifyResource, err := apigateway.NewResource(ctx, "CartModifyAPIResource", &apigateway.ResourceArgs{
-			RestApi:  gateway.ID(),
-			PathPart: pulumi.String("modify"),
-			ParentId: cartResource.ID(),
-		})
-		if err != nil {
-			return err
-		}
-
-		itemAddResource, err := apigateway.NewResource(ctx, "ItemAddAPIResource", &apigateway.ResourceArgs{
-			RestApi:  gateway.ID(),
-			PathPart: pulumi.String("add"),
-			ParentId: itemResource.ID(),
-		})
-		if err != nil {
-			return err
-		}
-
-		itemModifyResource, err := apigateway.NewResource(ctx, "ItemModifyAPIResource", &apigateway.ResourceArgs{
-			RestApi:  gateway.ID(),
-			PathPart: pulumi.String("modify"),
-			ParentId: itemResource.ID(),
-		})
-		if err != nil {
-			return err
-		}
-
-		itemsResource, err := apigateway.NewResource(ctx, "ItemsAPIResource", &apigateway.ResourceArgs{
-			RestApi:  gateway.ID(),
-			PathPart: pulumi.String("items"),
-			ParentId: cartResource.ID(),
-		})
-		if err != nil {
-			return err
-		}
-
-		totalResource, err := apigateway.NewResource(ctx, "TotalAPIResource", &apigateway.ResourceArgs{
-			RestApi:  gateway.ID(),
-			PathPart: pulumi.String("total"),
-			ParentId: cartResource.ID(),
-		})
-		if err != nil {
-			return err
-		}
-
-		itemsTotalResource, err := apigateway.NewResource(ctx, "ItemsTotalAPIResource", &apigateway.ResourceArgs{
-			RestApi:  gateway.ID(),
-			PathPart: pulumi.String("total"),
-			ParentId: itemsResource.ID(),
-		})
-		if err != nil {
-			return err
-		}
 
 		// Lookup the DynamoDB table
 		dynamoTable, err := dynamodb.LookupTable(ctx, &dynamodb.LookupTableArgs{
@@ -284,53 +185,12 @@ func main() {
 			Tags:        pulumi.Map(tagMap),
 		}
 
-		function, err := lambda.NewFunction(ctx, fmt.Sprintf("%s-lambda-cart-additem", ctx.Stack()), functionArgs)
+		cartAddItemFunction, err := lambda.NewFunction(ctx, fmt.Sprintf("%s-lambda-cart-additem", ctx.Stack()), functionArgs)
 		if err != nil {
 			return err
 		}
 
-		resource, err := apigateway.NewResource(ctx, "AddItemAPI", &apigateway.ResourceArgs{
-			RestApi:  gateway.ID(),
-			PathPart: pulumi.String("{userid}"),
-			ParentId: itemAddResource.ID(),
-		}, pulumi.DependsOn([]pulumi.Resource{gateway}))
-		if err != nil {
-			return err
-		}
-
-		_, err = apigateway.NewMethod(ctx, "AddItemAPIPostMethod", &apigateway.MethodArgs{
-			HttpMethod:    pulumi.String("POST"),
-			Authorization: pulumi.String("NONE"),
-			RestApi:       gateway.ID(),
-			ResourceId:    resource.ID(),
-		}, pulumi.DependsOn([]pulumi.Resource{gateway, resource}))
-		if err != nil {
-			return err
-		}
-
-		_, err = apigateway.NewIntegration(ctx, "AddItemAPIIntegration", &apigateway.IntegrationArgs{
-			HttpMethod:            pulumi.String("POST"),
-			IntegrationHttpMethod: pulumi.String("POST"),
-			ResourceId:            resource.ID(),
-			RestApi:               gateway.ID(),
-			Type:                  pulumi.String("AWS_PROXY"),
-			Uri:                   function.InvokeArn,
-		}, pulumi.DependsOn([]pulumi.Resource{gateway, resource, function}))
-		if err != nil {
-			return err
-		}
-
-		_, err = lambda.NewPermission(ctx, "AddItemAPIPermission", &lambda.PermissionArgs{
-			Action:    pulumi.String("lambda:InvokeFunction"),
-			Function:  function.Name,
-			Principal: pulumi.String("apigateway.amazonaws.com"),
-			SourceArn: pulumi.Sprintf("arn:aws:execute-api:%s:%s:%s/*/POST/cart/item/add/*", genericConfig.Region, genericConfig.AccountID, gateway.ID()),
-		}, pulumi.DependsOn([]pulumi.Resource{gateway, resource, function}))
-		if err != nil {
-			return err
-		}
-
-		ctx.Export("lambda-cart-additem::Arn", function.Arn)
+		ctx.Export("lambda-cart-additem::Arn", cartAddItemFunction.Arn)
 
 		// Create the All function
 		variables["FUNCTION_NAME"] = pulumi.String(fmt.Sprintf("%s-lambda-cart-all", ctx.Stack()))
@@ -351,53 +211,12 @@ func main() {
 			Tags:        pulumi.Map(tagMap),
 		}
 
-		function, err = lambda.NewFunction(ctx, fmt.Sprintf("%s-lambda-cart-all", ctx.Stack()), functionArgs)
+		cartAllFunction, err := lambda.NewFunction(ctx, fmt.Sprintf("%s-lambda-cart-all", ctx.Stack()), functionArgs)
 		if err != nil {
 			return err
 		}
 
-		resource, err = apigateway.NewResource(ctx, "AllCartsAPI", &apigateway.ResourceArgs{
-			RestApi:  gateway.ID(),
-			PathPart: pulumi.String("all"),
-			ParentId: cartResource.ID(),
-		}, pulumi.DependsOn([]pulumi.Resource{gateway}))
-		if err != nil {
-			return err
-		}
-
-		_, err = apigateway.NewMethod(ctx, "AllCartsAPIGetMethod", &apigateway.MethodArgs{
-			HttpMethod:    pulumi.String("GET"),
-			Authorization: pulumi.String("NONE"),
-			RestApi:       gateway.ID(),
-			ResourceId:    resource.ID(),
-		}, pulumi.DependsOn([]pulumi.Resource{gateway, resource}))
-		if err != nil {
-			return err
-		}
-
-		_, err = apigateway.NewIntegration(ctx, "AllCartsAPIIntegration", &apigateway.IntegrationArgs{
-			HttpMethod:            pulumi.String("GET"),
-			IntegrationHttpMethod: pulumi.String("POST"),
-			ResourceId:            resource.ID(),
-			RestApi:               gateway.ID(),
-			Type:                  pulumi.String("AWS_PROXY"),
-			Uri:                   function.InvokeArn,
-		}, pulumi.DependsOn([]pulumi.Resource{gateway, resource, function}))
-		if err != nil {
-			return err
-		}
-
-		_, err = lambda.NewPermission(ctx, "AllCartsAPIPermission", &lambda.PermissionArgs{
-			Action:    pulumi.String("lambda:InvokeFunction"),
-			Function:  function.Name,
-			Principal: pulumi.String("apigateway.amazonaws.com"),
-			SourceArn: pulumi.Sprintf("arn:aws:execute-api:%s:%s:%s/*/GET/cart/all", genericConfig.Region, genericConfig.AccountID, gateway.ID()),
-		}, pulumi.DependsOn([]pulumi.Resource{gateway, resource, function}))
-		if err != nil {
-			return err
-		}
-
-		ctx.Export("lambda-cart-all::Arn", function.Arn)
+		ctx.Export("lambda-cart-all::Arn", cartAllFunction.Arn)
 
 		// Create the Clear function
 		variables["FUNCTION_NAME"] = pulumi.String(fmt.Sprintf("%s-lambda-cart-clear", ctx.Stack()))
@@ -418,53 +237,12 @@ func main() {
 			Tags:        pulumi.Map(tagMap),
 		}
 
-		function, err = lambda.NewFunction(ctx, fmt.Sprintf("%s-lambda-cart-clear", ctx.Stack()), functionArgs)
+		cartClearFunction, err := lambda.NewFunction(ctx, fmt.Sprintf("%s-lambda-cart-clear", ctx.Stack()), functionArgs)
 		if err != nil {
 			return err
 		}
 
-		resource, err = apigateway.NewResource(ctx, "ClearCartAPI", &apigateway.ResourceArgs{
-			RestApi:  gateway.ID(),
-			PathPart: pulumi.String("{userid}"),
-			ParentId: clearResource.ID(),
-		}, pulumi.DependsOn([]pulumi.Resource{gateway}))
-		if err != nil {
-			return err
-		}
-
-		_, err = apigateway.NewMethod(ctx, "ClearCartAPIGetMethod", &apigateway.MethodArgs{
-			HttpMethod:    pulumi.String("GET"),
-			Authorization: pulumi.String("NONE"),
-			RestApi:       gateway.ID(),
-			ResourceId:    resource.ID(),
-		}, pulumi.DependsOn([]pulumi.Resource{gateway, resource}))
-		if err != nil {
-			return err
-		}
-
-		_, err = apigateway.NewIntegration(ctx, "ClearCartAPIIntegration", &apigateway.IntegrationArgs{
-			HttpMethod:            pulumi.String("GET"),
-			IntegrationHttpMethod: pulumi.String("POST"),
-			ResourceId:            resource.ID(),
-			RestApi:               gateway.ID(),
-			Type:                  pulumi.String("AWS_PROXY"),
-			Uri:                   function.InvokeArn,
-		}, pulumi.DependsOn([]pulumi.Resource{gateway, resource, function}))
-		if err != nil {
-			return err
-		}
-
-		_, err = lambda.NewPermission(ctx, "ClearCartAPIPermission", &lambda.PermissionArgs{
-			Action:    pulumi.String("lambda:InvokeFunction"),
-			Function:  function.Name,
-			Principal: pulumi.String("apigateway.amazonaws.com"),
-			SourceArn: pulumi.Sprintf("arn:aws:execute-api:%s:%s:%s/*/GET/cart/clear/*", genericConfig.Region, genericConfig.AccountID, gateway.ID()),
-		}, pulumi.DependsOn([]pulumi.Resource{gateway, resource, function}))
-		if err != nil {
-			return err
-		}
-
-		ctx.Export("lambda-cart-clear::Arn", function.Arn)
+		ctx.Export("lambda-cart-clear::Arn", cartClearFunction.Arn)
 
 		// Create the ItemModify function
 		variables["FUNCTION_NAME"] = pulumi.String(fmt.Sprintf("%s-lambda-cart-itemmodify", ctx.Stack()))
@@ -484,53 +262,12 @@ func main() {
 			Tags:        pulumi.Map(tagMap),
 		}
 
-		function, err = lambda.NewFunction(ctx, fmt.Sprintf("%s-lambda-cart-itemmodify", ctx.Stack()), functionArgs)
+		cartItemModifyFunction, err := lambda.NewFunction(ctx, fmt.Sprintf("%s-lambda-cart-itemmodify", ctx.Stack()), functionArgs)
 		if err != nil {
 			return err
 		}
 
-		resource, err = apigateway.NewResource(ctx, "ItemModifyAPI", &apigateway.ResourceArgs{
-			RestApi:  gateway.ID(),
-			PathPart: pulumi.String("{userid}"),
-			ParentId: itemModifyResource.ID(),
-		}, pulumi.DependsOn([]pulumi.Resource{gateway}))
-		if err != nil {
-			return err
-		}
-
-		_, err = apigateway.NewMethod(ctx, "ItemModifyAPIPostMethod", &apigateway.MethodArgs{
-			HttpMethod:    pulumi.String("POST"),
-			Authorization: pulumi.String("NONE"),
-			RestApi:       gateway.ID(),
-			ResourceId:    resource.ID(),
-		}, pulumi.DependsOn([]pulumi.Resource{gateway, resource}))
-		if err != nil {
-			return err
-		}
-
-		_, err = apigateway.NewIntegration(ctx, "ItemModifyAPIIntegration", &apigateway.IntegrationArgs{
-			HttpMethod:            pulumi.String("POST"),
-			IntegrationHttpMethod: pulumi.String("POST"),
-			ResourceId:            resource.ID(),
-			RestApi:               gateway.ID(),
-			Type:                  pulumi.String("AWS_PROXY"),
-			Uri:                   function.InvokeArn,
-		}, pulumi.DependsOn([]pulumi.Resource{gateway, resource, function}))
-		if err != nil {
-			return err
-		}
-
-		_, err = lambda.NewPermission(ctx, "ItemModifyAPIPermission", &lambda.PermissionArgs{
-			Action:    pulumi.String("lambda:InvokeFunction"),
-			Function:  function.Name,
-			Principal: pulumi.String("apigateway.amazonaws.com"),
-			SourceArn: pulumi.Sprintf("arn:aws:execute-api:%s:%s:%s/*/POST/cart/item/modify/*", genericConfig.Region, genericConfig.AccountID, gateway.ID()),
-		}, pulumi.DependsOn([]pulumi.Resource{gateway, resource, function}))
-		if err != nil {
-			return err
-		}
-
-		ctx.Export("lambda-cart-itemmodify::Arn", function.Arn)
+		ctx.Export("lambda-cart-itemmodify::Arn", cartItemModifyFunction.Arn)
 
 		// Create the ItemTotal function
 		variables["FUNCTION_NAME"] = pulumi.String(fmt.Sprintf("%s-lambda-cart-itemtotal", ctx.Stack()))
@@ -551,53 +288,12 @@ func main() {
 			Tags:        pulumi.Map(tagMap),
 		}
 
-		function, err = lambda.NewFunction(ctx, fmt.Sprintf("%s-lambda-cart-itemtotal", ctx.Stack()), functionArgs)
+		cartItemTotalFunction, err := lambda.NewFunction(ctx, fmt.Sprintf("%s-lambda-cart-itemtotal", ctx.Stack()), functionArgs)
 		if err != nil {
 			return err
 		}
 
-		resource, err = apigateway.NewResource(ctx, "ItemTotalAPI", &apigateway.ResourceArgs{
-			RestApi:  gateway.ID(),
-			PathPart: pulumi.String("{userid}"),
-			ParentId: itemsTotalResource.ID(),
-		}, pulumi.DependsOn([]pulumi.Resource{gateway}))
-		if err != nil {
-			return err
-		}
-
-		_, err = apigateway.NewMethod(ctx, "ItemTotalAPIPostMethod", &apigateway.MethodArgs{
-			HttpMethod:    pulumi.String("GET"),
-			Authorization: pulumi.String("NONE"),
-			RestApi:       gateway.ID(),
-			ResourceId:    resource.ID(),
-		}, pulumi.DependsOn([]pulumi.Resource{gateway, resource}))
-		if err != nil {
-			return err
-		}
-
-		_, err = apigateway.NewIntegration(ctx, "ItemTotalAPIIntegration", &apigateway.IntegrationArgs{
-			HttpMethod:            pulumi.String("GET"),
-			IntegrationHttpMethod: pulumi.String("POST"),
-			ResourceId:            resource.ID(),
-			RestApi:               gateway.ID(),
-			Type:                  pulumi.String("AWS_PROXY"),
-			Uri:                   function.InvokeArn,
-		}, pulumi.DependsOn([]pulumi.Resource{gateway, resource, function}))
-		if err != nil {
-			return err
-		}
-
-		_, err = lambda.NewPermission(ctx, "ItemTotalAPIPermission", &lambda.PermissionArgs{
-			Action:    pulumi.String("lambda:InvokeFunction"),
-			Function:  function.Name,
-			Principal: pulumi.String("apigateway.amazonaws.com"),
-			SourceArn: pulumi.Sprintf("arn:aws:execute-api:%s:%s:%s/*/POST/cart/items/total/*", genericConfig.Region, genericConfig.AccountID, gateway.ID()),
-		}, pulumi.DependsOn([]pulumi.Resource{gateway, resource, function}))
-		if err != nil {
-			return err
-		}
-
-		ctx.Export("lambda-cart-itemtotal::Arn", function.Arn)
+		ctx.Export("lambda-cart-itemtotal::Arn", cartItemTotalFunction.Arn)
 
 		// Create the Modify function
 		variables["FUNCTION_NAME"] = pulumi.String(fmt.Sprintf("%s-lambda-cart-modify", ctx.Stack()))
@@ -619,53 +315,12 @@ func main() {
 		}
 		variables["FUNCTION_NAME"] = pulumi.String(fmt.Sprintf("%s-lambda-cart-modify", ctx.Stack()))
 
-		function, err = lambda.NewFunction(ctx, fmt.Sprintf("%s-lambda-cart-modify", ctx.Stack()), functionArgs)
+		cartModifyFunction, err := lambda.NewFunction(ctx, fmt.Sprintf("%s-lambda-cart-modify", ctx.Stack()), functionArgs)
 		if err != nil {
 			return err
 		}
 
-		resource, err = apigateway.NewResource(ctx, "CartModifyAPI", &apigateway.ResourceArgs{
-			RestApi:  gateway.ID(),
-			PathPart: pulumi.String("{userid}"),
-			ParentId: cartModifyResource.ID(),
-		}, pulumi.DependsOn([]pulumi.Resource{gateway}))
-		if err != nil {
-			return err
-		}
-
-		_, err = apigateway.NewMethod(ctx, "CartModifyAPIPostMethod", &apigateway.MethodArgs{
-			HttpMethod:    pulumi.String("POST"),
-			Authorization: pulumi.String("NONE"),
-			RestApi:       gateway.ID(),
-			ResourceId:    resource.ID(),
-		}, pulumi.DependsOn([]pulumi.Resource{gateway, resource}))
-		if err != nil {
-			return err
-		}
-
-		_, err = apigateway.NewIntegration(ctx, "CartModifyAPIIntegration", &apigateway.IntegrationArgs{
-			HttpMethod:            pulumi.String("POST"),
-			IntegrationHttpMethod: pulumi.String("POST"),
-			ResourceId:            resource.ID(),
-			RestApi:               gateway.ID(),
-			Type:                  pulumi.String("AWS_PROXY"),
-			Uri:                   function.InvokeArn,
-		}, pulumi.DependsOn([]pulumi.Resource{gateway, resource, function}))
-		if err != nil {
-			return err
-		}
-
-		_, err = lambda.NewPermission(ctx, "CartModifyAPIPermission", &lambda.PermissionArgs{
-			Action:    pulumi.String("lambda:InvokeFunction"),
-			Function:  function.Name,
-			Principal: pulumi.String("apigateway.amazonaws.com"),
-			SourceArn: pulumi.Sprintf("arn:aws:execute-api:%s:%s:%s/*/POST/cart/modify/*", genericConfig.Region, genericConfig.AccountID, gateway.ID()),
-		}, pulumi.DependsOn([]pulumi.Resource{gateway, resource, function}))
-		if err != nil {
-			return err
-		}
-
-		ctx.Export("lambda-cart-modify::Arn", function.Arn)
+		ctx.Export("lambda-cart-modify::Arn", cartModifyFunction.Arn)
 
 		// Create the Total function
 		variables["FUNCTION_NAME"] = pulumi.String(fmt.Sprintf("%s-lambda-cart-total", ctx.Stack()))
@@ -687,53 +342,12 @@ func main() {
 		}
 		variables["FUNCTION_NAME"] = pulumi.String(fmt.Sprintf("%s-lambda-cart-total", ctx.Stack()))
 
-		function, err = lambda.NewFunction(ctx, fmt.Sprintf("%s-lambda-cart-total", ctx.Stack()), functionArgs)
+		cartTotalFunction, err := lambda.NewFunction(ctx, fmt.Sprintf("%s-lambda-cart-total", ctx.Stack()), functionArgs)
 		if err != nil {
 			return err
 		}
 
-		resource, err = apigateway.NewResource(ctx, "CartTotalAPI", &apigateway.ResourceArgs{
-			RestApi:  gateway.ID(),
-			PathPart: pulumi.String("{userid}"),
-			ParentId: totalResource.ID(),
-		}, pulumi.DependsOn([]pulumi.Resource{gateway}))
-		if err != nil {
-			return err
-		}
-
-		_, err = apigateway.NewMethod(ctx, "CartTotalAPIPostMethod", &apigateway.MethodArgs{
-			HttpMethod:    pulumi.String("GET"),
-			Authorization: pulumi.String("NONE"),
-			RestApi:       gateway.ID(),
-			ResourceId:    resource.ID(),
-		}, pulumi.DependsOn([]pulumi.Resource{gateway, resource}))
-		if err != nil {
-			return err
-		}
-
-		_, err = apigateway.NewIntegration(ctx, "CartTotalAPIIntegration", &apigateway.IntegrationArgs{
-			HttpMethod:            pulumi.String("GET"),
-			IntegrationHttpMethod: pulumi.String("POST"),
-			ResourceId:            resource.ID(),
-			RestApi:               gateway.ID(),
-			Type:                  pulumi.String("AWS_PROXY"),
-			Uri:                   function.InvokeArn,
-		}, pulumi.DependsOn([]pulumi.Resource{gateway, resource, function}))
-		if err != nil {
-			return err
-		}
-
-		_, err = lambda.NewPermission(ctx, "CartTotalAPIPermission", &lambda.PermissionArgs{
-			Action:    pulumi.String("lambda:InvokeFunction"),
-			Function:  function.Name,
-			Principal: pulumi.String("apigateway.amazonaws.com"),
-			SourceArn: pulumi.Sprintf("arn:aws:execute-api:%s:%s:%s/*/GET/cart/total/*", genericConfig.Region, genericConfig.AccountID, gateway.ID()),
-		}, pulumi.DependsOn([]pulumi.Resource{gateway, resource, function}))
-		if err != nil {
-			return err
-		}
-
-		ctx.Export("lambda-cart-total::Arn", function.Arn)
+		ctx.Export("lambda-cart-total::Arn", cartTotalFunction.Arn)
 
 		// Create the User function
 		variables["FUNCTION_NAME"] = pulumi.String(fmt.Sprintf("%s-lambda-cart-user", ctx.Stack()))
@@ -754,53 +368,233 @@ func main() {
 			Tags:        pulumi.Map(tagMap),
 		}
 
-		function, err = lambda.NewFunction(ctx, fmt.Sprintf("%s-lambda-cart-user", ctx.Stack()), functionArgs)
+		cartUserFunction, err := lambda.NewFunction(ctx, fmt.Sprintf("%s-lambda-cart-user", ctx.Stack()), functionArgs)
 		if err != nil {
 			return err
 		}
 
-		resource, err = apigateway.NewResource(ctx, "CartUserTotalAPI", &apigateway.ResourceArgs{
-			RestApi:  gateway.ID(),
-			PathPart: pulumi.String("{userid}"),
-			ParentId: itemsResource.ID(),
-		}, pulumi.DependsOn([]pulumi.Resource{gateway}))
+		ctx.Export("lambda-cart-user::Arn", cartUserFunction.Arn)
+
+		// Create the API Gateway Policy
+		iamFactory.ClearPolicies()
+		iamFactory.AddAssumeRoleLambda()
+		iamFactory.AddExecuteAPI()
+		policies, err := iamFactory.GetPolicyStatement()
 		if err != nil {
 			return err
 		}
 
-		_, err = apigateway.NewMethod(ctx, "CartUserTotalAPIPostMethod", &apigateway.MethodArgs{
-			HttpMethod:    pulumi.String("GET"),
-			Authorization: pulumi.String("NONE"),
-			RestApi:       gateway.ID(),
-			ResourceId:    resource.ID(),
-		}, pulumi.DependsOn([]pulumi.Resource{gateway, resource}))
+		// Read the OpenAPI specification
+		bytes, err := ioutil.ReadFile("../api/openapi.json")
 		if err != nil {
 			return err
 		}
 
-		_, err = apigateway.NewIntegration(ctx, "CartUserTotalAPIIntegration", &apigateway.IntegrationArgs{
-			HttpMethod:            pulumi.String("GET"),
-			IntegrationHttpMethod: pulumi.String("POST"),
-			ResourceId:            resource.ID(),
-			RestApi:               gateway.ID(),
-			Type:                  pulumi.String("AWS_PROXY"),
-			Uri:                   function.InvokeArn,
-		}, pulumi.DependsOn([]pulumi.Resource{gateway, resource, function}))
+		// Create an API Gateway
+		gateway, err := apigateway.NewRestApi(ctx, "CartService", &apigateway.RestApiArgs{
+			Name:        pulumi.String("CartService"),
+			Description: pulumi.String("ACME Serverless Fitness Shop - Cart"),
+			Tags:        pulumi.Map(tagMap),
+			Policy:      pulumi.String(policies),
+			Body:        pulumi.StringPtr(string(bytes)),
+		})
 		if err != nil {
 			return err
 		}
 
-		_, err = lambda.NewPermission(ctx, "CartUserTotalAPIPermission", &lambda.PermissionArgs{
-			Action:    pulumi.String("lambda:InvokeFunction"),
-			Function:  function.Name,
-			Principal: pulumi.String("apigateway.amazonaws.com"),
-			SourceArn: pulumi.Sprintf("arn:aws:execute-api:%s:%s:%s/*/GET/cart/items/*", genericConfig.Region, genericConfig.AccountID, gateway.ID()),
-		}, pulumi.DependsOn([]pulumi.Resource{gateway, resource, function}))
-		if err != nil {
-			return err
-		}
+		gatewayURL := gateway.ID().ToStringOutput().ApplyString(func(id string) string {
+			resource := gw.MustGetGatewayResource(ctx, id, "/cart/item/add/{userid}")
 
-		ctx.Export("lambda-cart-user::Arn", function.Arn)
+			apigateway.NewIntegration(ctx, "AddItemAPIIntegration", &apigateway.IntegrationArgs{
+				HttpMethod:            pulumi.String("POST"),
+				IntegrationHttpMethod: pulumi.String("POST"),
+				ResourceId:            pulumi.String(resource.Id),
+				RestApi:               gateway.ID(),
+				Type:                  pulumi.String("AWS_PROXY"),
+				Uri:                   cartAddItemFunction.InvokeArn,
+			})
+
+			_, err = lambda.NewPermission(ctx, "AddItemAPIPermission", &lambda.PermissionArgs{
+				Action:    pulumi.String("lambda:InvokeFunction"),
+				Function:  cartAddItemFunction.Name,
+				Principal: pulumi.String("apigateway.amazonaws.com"),
+				SourceArn: pulumi.Sprintf("arn:aws:execute-api:%s:%s:%s/*/POST/cart/item/add/*", genericConfig.Region, genericConfig.AccountID, gateway.ID()),
+			})
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			resource = gw.MustGetGatewayResource(ctx, id, "/cart/all")
+
+			_, err = apigateway.NewIntegration(ctx, "AllCartsAPIIntegration", &apigateway.IntegrationArgs{
+				HttpMethod:            pulumi.String("GET"),
+				IntegrationHttpMethod: pulumi.String("POST"),
+				ResourceId:            pulumi.String(resource.Id),
+				RestApi:               gateway.ID(),
+				Type:                  pulumi.String("AWS_PROXY"),
+				Uri:                   cartAllFunction.InvokeArn,
+			})
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			_, err = lambda.NewPermission(ctx, "AllCartsAPIPermission", &lambda.PermissionArgs{
+				Action:    pulumi.String("lambda:InvokeFunction"),
+				Function:  cartAllFunction.Name,
+				Principal: pulumi.String("apigateway.amazonaws.com"),
+				SourceArn: pulumi.Sprintf("arn:aws:execute-api:%s:%s:%s/*/GET/cart/all", genericConfig.Region, genericConfig.AccountID, gateway.ID()),
+			})
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			resource = gw.MustGetGatewayResource(ctx, id, "/cart/clear/{userid}")
+
+			_, err = apigateway.NewIntegration(ctx, "ClearCartAPIIntegration", &apigateway.IntegrationArgs{
+				HttpMethod:            pulumi.String("GET"),
+				IntegrationHttpMethod: pulumi.String("POST"),
+				ResourceId:            pulumi.String(resource.Id),
+				RestApi:               gateway.ID(),
+				Type:                  pulumi.String("AWS_PROXY"),
+				Uri:                   cartClearFunction.InvokeArn,
+			})
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			_, err = lambda.NewPermission(ctx, "ClearCartAPIPermission", &lambda.PermissionArgs{
+				Action:    pulumi.String("lambda:InvokeFunction"),
+				Function:  cartClearFunction.Name,
+				Principal: pulumi.String("apigateway.amazonaws.com"),
+				SourceArn: pulumi.Sprintf("arn:aws:execute-api:%s:%s:%s/*/GET/cart/clear/*", genericConfig.Region, genericConfig.AccountID, gateway.ID()),
+			})
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			resource = gw.MustGetGatewayResource(ctx, id, "/cart/item/modify/{userid}")
+
+			_, err = apigateway.NewIntegration(ctx, "ItemModifyAPIIntegration", &apigateway.IntegrationArgs{
+				HttpMethod:            pulumi.String("POST"),
+				IntegrationHttpMethod: pulumi.String("POST"),
+				ResourceId:            pulumi.String(resource.Id),
+				RestApi:               gateway.ID(),
+				Type:                  pulumi.String("AWS_PROXY"),
+				Uri:                   cartItemModifyFunction.InvokeArn,
+			})
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			_, err = lambda.NewPermission(ctx, "ItemModifyAPIPermission", &lambda.PermissionArgs{
+				Action:    pulumi.String("lambda:InvokeFunction"),
+				Function:  cartItemModifyFunction.Name,
+				Principal: pulumi.String("apigateway.amazonaws.com"),
+				SourceArn: pulumi.Sprintf("arn:aws:execute-api:%s:%s:%s/*/POST/cart/item/modify/*", genericConfig.Region, genericConfig.AccountID, gateway.ID()),
+			})
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			resource = gw.MustGetGatewayResource(ctx, id, "/cart/items/total/{userid}")
+
+			_, err = apigateway.NewIntegration(ctx, "ItemTotalAPIIntegration", &apigateway.IntegrationArgs{
+				HttpMethod:            pulumi.String("GET"),
+				IntegrationHttpMethod: pulumi.String("POST"),
+				ResourceId:            pulumi.String(resource.Id),
+				RestApi:               gateway.ID(),
+				Type:                  pulumi.String("AWS_PROXY"),
+				Uri:                   cartItemTotalFunction.InvokeArn,
+			})
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			_, err = lambda.NewPermission(ctx, "ItemTotalAPIPermission", &lambda.PermissionArgs{
+				Action:    pulumi.String("lambda:InvokeFunction"),
+				Function:  cartItemTotalFunction.Name,
+				Principal: pulumi.String("apigateway.amazonaws.com"),
+				SourceArn: pulumi.Sprintf("arn:aws:execute-api:%s:%s:%s/*/POST/cart/items/total/*", genericConfig.Region, genericConfig.AccountID, gateway.ID()),
+			})
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			resource = gw.MustGetGatewayResource(ctx, id, "/cart/modify/{userid}")
+
+			_, err = apigateway.NewIntegration(ctx, "CartModifyAPIIntegration", &apigateway.IntegrationArgs{
+				HttpMethod:            pulumi.String("POST"),
+				IntegrationHttpMethod: pulumi.String("POST"),
+				ResourceId:            pulumi.String(resource.Id),
+				RestApi:               gateway.ID(),
+				Type:                  pulumi.String("AWS_PROXY"),
+				Uri:                   cartModifyFunction.InvokeArn,
+			})
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			_, err = lambda.NewPermission(ctx, "CartModifyAPIPermission", &lambda.PermissionArgs{
+				Action:    pulumi.String("lambda:InvokeFunction"),
+				Function:  cartModifyFunction.Name,
+				Principal: pulumi.String("apigateway.amazonaws.com"),
+				SourceArn: pulumi.Sprintf("arn:aws:execute-api:%s:%s:%s/*/POST/cart/modify/*", genericConfig.Region, genericConfig.AccountID, gateway.ID()),
+			})
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			resource = gw.MustGetGatewayResource(ctx, id, "/cart/total/{userid}")
+
+			_, err = apigateway.NewIntegration(ctx, "CartTotalAPIIntegration", &apigateway.IntegrationArgs{
+				HttpMethod:            pulumi.String("GET"),
+				IntegrationHttpMethod: pulumi.String("POST"),
+				ResourceId:            pulumi.String(resource.Id),
+				RestApi:               gateway.ID(),
+				Type:                  pulumi.String("AWS_PROXY"),
+				Uri:                   cartTotalFunction.InvokeArn,
+			})
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			_, err = lambda.NewPermission(ctx, "CartTotalAPIPermission", &lambda.PermissionArgs{
+				Action:    pulumi.String("lambda:InvokeFunction"),
+				Function:  cartTotalFunction.Name,
+				Principal: pulumi.String("apigateway.amazonaws.com"),
+				SourceArn: pulumi.Sprintf("arn:aws:execute-api:%s:%s:%s/*/GET/cart/total/*", genericConfig.Region, genericConfig.AccountID, gateway.ID()),
+			})
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			resource = gw.MustGetGatewayResource(ctx, id, "/cart/items/{userid}")
+
+			_, err = apigateway.NewIntegration(ctx, "CartUserTotalAPIIntegration", &apigateway.IntegrationArgs{
+				HttpMethod:            pulumi.String("GET"),
+				IntegrationHttpMethod: pulumi.String("POST"),
+				ResourceId:            pulumi.String(resource.Id),
+				RestApi:               gateway.ID(),
+				Type:                  pulumi.String("AWS_PROXY"),
+				Uri:                   cartUserFunction.InvokeArn,
+			})
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			_, err = lambda.NewPermission(ctx, "CartUserTotalAPIPermission", &lambda.PermissionArgs{
+				Action:    pulumi.String("lambda:InvokeFunction"),
+				Function:  cartUserFunction.Name,
+				Principal: pulumi.String("apigateway.amazonaws.com"),
+				SourceArn: pulumi.Sprintf("arn:aws:execute-api:%s:%s:%s/*/GET/cart/items/*", genericConfig.Region, genericConfig.AccountID, gateway.ID()),
+			})
+			if err != nil {
+				fmt.Println(err)
+			}
+			return fmt.Sprintf("https://%s.execute-api.%s.amazonaws.com/prod/{message}", id, genericConfig.Region)
+		})
+
+		ctx.Export("Gateway::URL", gatewayURL)
 
 		return nil
 	})
