@@ -411,7 +411,7 @@ func main() {
 		gatewayURL := gateway.ID().ToStringOutput().ApplyString(func(id string) string {
 			resource := gw.MustGetGatewayResource(ctx, id, "/cart/item/add/{userid}")
 
-			apigateway.NewIntegration(ctx, "AddItemAPIIntegration", &apigateway.IntegrationArgs{
+			i1, err := apigateway.NewIntegration(ctx, "AddItemAPIIntegration", &apigateway.IntegrationArgs{
 				HttpMethod:            pulumi.String("POST"),
 				IntegrationHttpMethod: pulumi.String("POST"),
 				ResourceId:            pulumi.String(resource.Id),
@@ -432,7 +432,7 @@ func main() {
 
 			resource = gw.MustGetGatewayResource(ctx, id, "/cart/all")
 
-			_, err = apigateway.NewIntegration(ctx, "AllCartsAPIIntegration", &apigateway.IntegrationArgs{
+			i2, err := apigateway.NewIntegration(ctx, "AllCartsAPIIntegration", &apigateway.IntegrationArgs{
 				HttpMethod:            pulumi.String("GET"),
 				IntegrationHttpMethod: pulumi.String("POST"),
 				ResourceId:            pulumi.String(resource.Id),
@@ -456,7 +456,7 @@ func main() {
 
 			resource = gw.MustGetGatewayResource(ctx, id, "/cart/clear/{userid}")
 
-			_, err = apigateway.NewIntegration(ctx, "ClearCartAPIIntegration", &apigateway.IntegrationArgs{
+			i3, err := apigateway.NewIntegration(ctx, "ClearCartAPIIntegration", &apigateway.IntegrationArgs{
 				HttpMethod:            pulumi.String("GET"),
 				IntegrationHttpMethod: pulumi.String("POST"),
 				ResourceId:            pulumi.String(resource.Id),
@@ -480,7 +480,7 @@ func main() {
 
 			resource = gw.MustGetGatewayResource(ctx, id, "/cart/item/modify/{userid}")
 
-			_, err = apigateway.NewIntegration(ctx, "ItemModifyAPIIntegration", &apigateway.IntegrationArgs{
+			i4, err := apigateway.NewIntegration(ctx, "ItemModifyAPIIntegration", &apigateway.IntegrationArgs{
 				HttpMethod:            pulumi.String("POST"),
 				IntegrationHttpMethod: pulumi.String("POST"),
 				ResourceId:            pulumi.String(resource.Id),
@@ -504,7 +504,7 @@ func main() {
 
 			resource = gw.MustGetGatewayResource(ctx, id, "/cart/items/total/{userid}")
 
-			_, err = apigateway.NewIntegration(ctx, "ItemTotalAPIIntegration", &apigateway.IntegrationArgs{
+			i5, err := apigateway.NewIntegration(ctx, "ItemTotalAPIIntegration", &apigateway.IntegrationArgs{
 				HttpMethod:            pulumi.String("GET"),
 				IntegrationHttpMethod: pulumi.String("POST"),
 				ResourceId:            pulumi.String(resource.Id),
@@ -528,7 +528,7 @@ func main() {
 
 			resource = gw.MustGetGatewayResource(ctx, id, "/cart/modify/{userid}")
 
-			_, err = apigateway.NewIntegration(ctx, "CartModifyAPIIntegration", &apigateway.IntegrationArgs{
+			i6, err := apigateway.NewIntegration(ctx, "CartModifyAPIIntegration", &apigateway.IntegrationArgs{
 				HttpMethod:            pulumi.String("POST"),
 				IntegrationHttpMethod: pulumi.String("POST"),
 				ResourceId:            pulumi.String(resource.Id),
@@ -552,7 +552,7 @@ func main() {
 
 			resource = gw.MustGetGatewayResource(ctx, id, "/cart/total/{userid}")
 
-			_, err = apigateway.NewIntegration(ctx, "CartTotalAPIIntegration", &apigateway.IntegrationArgs{
+			i7, err := apigateway.NewIntegration(ctx, "CartTotalAPIIntegration", &apigateway.IntegrationArgs{
 				HttpMethod:            pulumi.String("GET"),
 				IntegrationHttpMethod: pulumi.String("POST"),
 				ResourceId:            pulumi.String(resource.Id),
@@ -576,7 +576,7 @@ func main() {
 
 			resource = gw.MustGetGatewayResource(ctx, id, "/cart/items/{userid}")
 
-			_, err = apigateway.NewIntegration(ctx, "CartUserTotalAPIIntegration", &apigateway.IntegrationArgs{
+			i8, err := apigateway.NewIntegration(ctx, "CartUserTotalAPIIntegration", &apigateway.IntegrationArgs{
 				HttpMethod:            pulumi.String("GET"),
 				IntegrationHttpMethod: pulumi.String("POST"),
 				ResourceId:            pulumi.String(resource.Id),
@@ -604,7 +604,7 @@ func main() {
 				RestApi:          gateway.ID(),
 				StageDescription: pulumi.String("Prod Stage"),
 				StageName:        pulumi.String("Prod"),
-			})
+			}, pulumi.DependsOn([]pulumi.Resource{i1, i2, i3, i4, i5, i6, i7, i8}))
 			if err != nil {
 				fmt.Println(err)
 			}
