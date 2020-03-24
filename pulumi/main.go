@@ -597,6 +597,18 @@ func main() {
 			if err != nil {
 				fmt.Println(err)
 			}
+
+			// Create a new deployment in API Gateway
+			_, err = apigateway.NewDeployment(ctx, "prod", &apigateway.DeploymentArgs{
+				Description:      pulumi.String("deployment to the prod stage"),
+				RestApi:          gateway.ID(),
+				StageDescription: pulumi.String("Prod Stage"),
+				StageName:        pulumi.String("Prod"),
+			})
+			if err != nil {
+				fmt.Println(err)
+			}
+
 			return fmt.Sprintf("https://%s.execute-api.%s.amazonaws.com/prod/", id, genericConfig.Region)
 		})
 
