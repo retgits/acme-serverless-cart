@@ -11,7 +11,7 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/getsentry/sentry-go"
-	cart "github.com/retgits/acme-serverless-cart"
+	acmeserverless "github.com/retgits/acme-serverless"
 	"github.com/retgits/acme-serverless-cart/internal/datastore/dynamodb"
 	wflambda "github.com/wavefronthq/wavefront-lambda-go"
 )
@@ -48,7 +48,7 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 		return handleError("getting items", headers, err)
 	}
 
-	item, err := cart.UnmarshalItem([]byte(request.Body))
+	item, err := acmeserverless.UnmarshalItem([]byte(request.Body))
 	if err != nil {
 		return handleError("unmarshaling item data", headers, err)
 	}
@@ -64,7 +64,7 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 		return handleError("storing modified data", headers, err)
 	}
 
-	res := cart.UserIDResponse{
+	res := acmeserverless.UserIDResponse{
 		UserID: userID,
 	}
 

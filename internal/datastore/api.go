@@ -4,17 +4,17 @@
 // needs to be implemented.
 package datastore
 
-import cart "github.com/retgits/acme-serverless-cart"
+import acmeserverless "github.com/retgits/acme-serverless"
 
 // Manager is the interface that describes the methods the
 // data store needs to implement to be able to work with
 // the ACME Serverless Fitness Shop.
 type Manager interface {
-	GetItems(userID string) (cart.Items, error)
-	AddItem(userID string, i cart.Item) error
-	AllCarts() (cart.Carts, error)
+	GetItems(userID string) (acmeserverless.CartItems, error)
+	AddItem(userID string, i acmeserverless.CartItem) error
+	AllCarts() (acmeserverless.Carts, error)
 	ClearCart(userID string) error
-	StoreItems(userID string, i cart.Items) error
+	StoreItems(userID string, i acmeserverless.CartItems) error
 	ItemsInCart(userID string) (int64, error)
 	ValueInCart(userID string) (float64, error)
 }

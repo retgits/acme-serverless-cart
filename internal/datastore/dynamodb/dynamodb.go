@@ -10,7 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
-	cart "github.com/retgits/acme-serverless-cart"
+	acmeserverless "github.com/retgits/acme-serverless"
 	"github.com/retgits/acme-serverless-cart/internal/datastore"
 )
 
@@ -44,7 +44,7 @@ func New() datastore.Manager {
 }
 
 // GetItems retrieves all items for a single user from DynamoDB based on the userID
-func (m manager) GetItems(userID string) (cart.Items, error) {
+func (m manager) GetItems(userID string) (acmeserverless.CartItems, error) {
 	// Create a map of DynamoDB Attribute Values containing the table keys
 	// for the access pattern PK = CART SK = ID
 	km := make(map[string]*dynamodb.AttributeValue)
@@ -65,7 +65,7 @@ func (m manager) GetItems(userID string) (cart.Items, error) {
 	// Execute the DynamoDB query
 	qo, err := dbs.Query(qi)
 	if err != nil {
-		return cart.Items{}, err
+		return acmeserverless.CartItems{}, err
 	}
 
 	// Return an error if no data was found
@@ -74,11 +74,11 @@ func (m manager) GetItems(userID string) (cart.Items, error) {
 	}
 
 	str := *qo.Items[0]["Payload"].S
-	return cart.UnmarshalItems(str)
+	return acmeserverless.UnmarshalItems(str)
 }
 
 // AddItem adds a new item for the user to the cart
-func (m manager) AddItem(userID string, i cart.Item) error {
+func (m manager) AddItem(userID string, i acmeserverless.CartItem) error {
 	items, err := m.GetItems(userID)
 	if err != nil {
 		return err
@@ -115,7 +115,7 @@ func (m manager) AddItem(userID string, i cart.Item) error {
 }
 
 // AllCarts retrieves all carts from DynamoDB
-func (m manager) AllCarts() (cart.Carts, error) {
+func (m manager) AllCarts() (acmeserverless.Carts, error) {
 	// Create a map of DynamoDB Attribute Values containing the table keys
 	// for the access pattern PK = CART
 	km := make(map[string]*dynamodb.AttributeValue)
@@ -140,18 +140,18 @@ func (m manager) AllCarts() (cart.Carts, error) {
 		return nil, fmt.Errorf("no item data found")
 	}
 
-	carts := make(cart.Carts, 0)
+	carts := make(acmeserverless.Carts, 0)
 
 	for _, ct := range qo.Items {
 		str := *ct["Payload"].S
 
-		cartContent, err := cart.UnmarshalItems(str)
+		cartContent, err := acmeserverless.UnmarshalItems(str)
 		if err != nil {
 			log.Println(fmt.Sprintf("error unmarshalling cart data: %s", err.Error()))
 			continue
 		}
 
-		carts = append(carts, cart.Cart{
+		carts = append(carts, acmeserverless.Cart{
 			Items:  cartContent,
 			UserID: *ct["SK"].S,
 		})
@@ -189,7 +189,7 @@ func (m manager) ClearCart(userID string) error {
 }
 
 // StoreItems saves the cart items from a single user into Amazon DynamoDB
-func (m manager) StoreItems(userID string, i cart.Items) error {
+func (m manager) StoreItems(userID string, i acmeserverless.CartItems) error {
 	payload, err := i.Marshal()
 	if err != nil {
 		return err

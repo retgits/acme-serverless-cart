@@ -11,7 +11,7 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/getsentry/sentry-go"
-	cart "github.com/retgits/acme-serverless-cart"
+	acmeserverless "github.com/retgits/acme-serverless"
 	"github.com/retgits/acme-serverless-cart/internal/datastore/dynamodb"
 	wflambda "github.com/wavefronthq/wavefront-lambda-go"
 )
@@ -48,7 +48,7 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 		return handleError("calculating items", headers, err)
 	}
 
-	ct := cart.CartTotal{
+	ct := acmeserverless.CartItemTotal{
 		CartItemTotal: items,
 		UserID:        userID,
 	}
