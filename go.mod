@@ -10,7 +10,9 @@ require (
 	github.com/getsentry/sentry-go v0.5.1
 	github.com/pulumi/pulumi v1.14.1
 	github.com/pulumi/pulumi-aws v1.31.0
+	github.com/pulumi/pulumi-aws/sdk v1.31.0
 	github.com/pulumi/pulumi/sdk v1.14.1
+	github.com/retgits/acme-serverless v0.3.0
 	github.com/retgits/pulumi-helpers v0.1.7
 	github.com/wavefronthq/wavefront-lambda-go v0.0.0-20190812171804-d9475d6695cc
 )
