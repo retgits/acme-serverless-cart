@@ -33,7 +33,6 @@ func init() {
 	port := os.Getenv("MONGO_PORT")
 
 	connString := fmt.Sprintf("mongodb://%s:%s@%s:%s", username, password, hostname, port)
-	fmt.Println(connString)
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(connString))
 	if err != nil {
