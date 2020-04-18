@@ -25,7 +25,7 @@ func ModifyCartItem(ctx *fasthttp.RequestCtx) {
 	}
 
 	for idx, cci := range cartItems {
-		if cci.ItemID == item.ItemID {
+		if *cci.ItemID == *item.ItemID {
 			cartItems[idx] = item
 		}
 	}

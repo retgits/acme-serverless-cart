@@ -111,7 +111,7 @@ func main() {
 	router.GET("/cart/items/{userid}", cfg.WrapFastHTTPRequest(sentryHandler.Handle(GetCartItems)))
 	router.POST("/cart/modify/{userid}", cfg.WrapFastHTTPRequest(sentryHandler.Handle(ModifyCart)))
 	router.GET("/cart/total/{userid}", cfg.WrapFastHTTPRequest(sentryHandler.Handle(GetCartValue)))
-	router.GET("/cart/items/total/{userid}", cfg.WrapFastHTTPRequest(sentryHandler.Handle(GetUserCart)))
+	router.GET("/cart/items/total/{userid}", cfg.WrapFastHTTPRequest(sentryHandler.Handle(GetTotalItems)))
 
 	// Create an instance of the datastore manager
 	db = mongodb.New()

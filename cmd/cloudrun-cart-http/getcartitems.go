@@ -7,20 +7,20 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-// GetCartItems gets the number of items in a cart
+// GetCartItems gets the contents of a single cart
 func GetCartItems(ctx *fasthttp.RequestCtx) {
 	// Create the key attributes
 	userID := ctx.UserValue("userid").(string)
 
-	items, err := db.ItemsInCart(userID)
+	items, err := db.GetItems(userID)
 	if err != nil {
-		ErrorHandler(ctx, "ModifyCartItem", "ItemsInCart", err)
+		ErrorHandler(ctx, "GetCartItems", "GetItem", err)
 		return
 	}
 
-	ct := acmeserverless.CartItemTotal{
-		CartItemTotal: items,
-		UserID:        userID,
+	ct := acmeserverless.Cart{
+		Items:  items,
+		UserID: userID,
 	}
 
 	payload, err := ct.Marshal()

@@ -57,6 +57,12 @@ func (m manager) GetItems(userID string) (acmeserverless.CartItems, error) {
 		return nil, fmt.Errorf("unable to decode bytes: %s", err.Error())
 	}
 
+	payload := raw.Lookup("Payload").StringValue()
+
+	if len(payload) < 5 {
+		return make(acmeserverless.CartItems, 0), nil
+	}
+
 	return acmeserverless.UnmarshalItems(raw.Lookup("Payload").StringValue())
 }
 
